@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PRICE CHECKER</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fff0f6;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    #app {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .card {
+      background: #ffffff;
+      padding: 25px 20px;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      text-align: center;
+      transition: 0.3s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+    }
+
+    h2 {
+      color: #ff4d6d;
+      margin-bottom: 20px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 12px;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    .btn-black {
+      background: #000000;
+      color: white;
+    }
+
+    .btn-black:hover {
+      background: #333333;
+    }
+
+    .btn-pink {
+      background: #ff4d6d;
+      color: white;
+    }
+
+    .btn-pink:hover {
+      background: #e63950;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 18px;
+      background: #fff0f6;
+      border-radius: 15px;
+      text-align: center;
+    }
+
+    .price {
+      font-size: 22px;
+      font-weight: bold;
+      color: #ff4d6d;
+      margin: 10px 0;
+    }
+
+    select {
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+/* ---------- DATA STORAGE ---------- */
+let skuDatabase = {}; // { 'SKU1': true, 'SKU2': false } true = applicable
+
+/* ---------- HOMEPAGE ---------- */
+function showHomepage() {
+  document.getElementById("app").innerHTML = `
+    <div class="card">
+      <h2>PRICE CHECKER</h2>
+      <button class="btn-black" onclick="showPriceChecker()">Check Price</button>
+      <button class="btn-pink" onclick="showSKUChecker()">Check Voucher by SKU</button>
+      <button class="btn-black" onclick="showManageSKUs()">Manage SKUs</button>
+    </div>
+  `;
+}
+
+/* ---------- PRICE CHECKER ---------- */
+let roundedPayable = 0;
+
+function showPriceChecker() {
+  document.getElementById("app").innerHTML = `
+    <div class="card">
+      <h2>PRICE CHECKER</h2>
+      <label>Enter Original Price (₱)</label>
+      <input type="number" id="price" placeholder="Enter price...">
+      <button class="btn-pink" onclick="calculatePrice()">Check 70% Voucher</button>
+      <div id="output"></div>
+      <button class="btn-black" onclick="showHomepage()">HOMEPAGE</button>
+    </div>
+  `;
+}
+
+function calculatePrice() {
+  const price = parseFloat(document.getElementById("price").value);
+  if (isNaN(price) || price <= 0) return;
+
+  const discount = Math.min(price * 0.7, 410);
+  const payable = price - discount;
+  roundedPayable = Math.round(payable);
+
+  document.getElementById("output").innerHTML = `
+    <div class="result">
+      <p>After 70% Voucher:</p>
+      <div class="price">₱${roundedPayable}</div>
+      <label>Enter Points Available:</label>
+      <input type="number" id="points" placeholder="Enter points...">
+      <button class="btn-pink" onclick="checkFinalPrice()">CHECK FINAL PRICE</button>
+    </div>
+  `;
+}
+
+function checkFinalPrice() {
+  const pointsInput = parseFloat(document.getElementById("points").value);
+  if (isNaN(pointsInput) || pointsInput < 0) return;
+
+  const maxDeduction = Math.floor(roundedPayable * 0.30);
+  const actualDeduction = Math.min(pointsInput, maxDeduction);
+  const finalPrice = roundedPayable - actualDeduction;
+
+  document.getElementById("output").innerHTML += `
+    <div class="result">
+      <p>Points Used: ${actualDeduction}</p>
+      <p>Final Price:</p>
+      <div class="price">₱${finalPrice}</div>
+    </div>
+  `;
+}
+
+/* ---------- SKU CHECKER ---------- */
+function showSKUChecker() {
+  document.getElementById("app").innerHTML = `
+    <div class="card">
+      <h2>CHECK SKU VOUCHER ELIGIBILITY</h2>
+      <label>Enter SKU Number</label>
+      <input type="text" id="skuInput" placeholder="Enter SKU...">
+      <button class="btn-pink" onclick="checkSKU()">Check</button>
+      <div id="skuResult" class="result"></div>
+      <button class="btn-black" onclick="showHomepage()">HOMEPAGE</button>
+    </div>
+  `;
+}
+
+function checkSKU() {
+  const sku = document.getElementById("skuInput").value.trim();
+  const resultBox = document.getElementById("skuResult");
+
+  if (!sku) return;
+
+  if (skuDatabase.hasOwnProperty(sku)) {
+    if (skuDatabase[sku]) {
+      resultBox.innerHTML = "✅ APPLICABLE for 70% voucher";
+    } else {
+      resultBox.innerHTML = "❌ NOT APPLICABLE for 70% voucher";
+    }
+  } else {
+    resultBox.innerHTML = "⚠ SKU not found in database. Please add it in Manage SKUs.";
+  }
+}
+
+/* ---------- MANAGE SKUs ---------- */
+function showManageSKUs() {
+  document.getElementById("app").innerHTML = `
+    <div class="card">
+      <h2>MANAGE SKUs</h2>
+      <label>Enter SKU Number</label>
+      <input type="text" id="manageSKU" placeholder="Enter SKU...">
+      <label>Mark as:</label>
+      <select id="skuStatus">
+        <option value="true">APPLICABLE</option>
+        <option value="false">NOT APPLICABLE</option>
+      </select>
+      <button class="btn-pink" onclick="saveSKU()">Save SKU</button>
+      <div id="manageResult" class="result"></div>
+      <button class="btn-black" onclick="showHomepage()">HOMEPAGE</button>
+    </div>
+  `;
+}
+
+function saveSKU() {
+  const sku = document.getElementById("manageSKU").value.trim();
+  const status = document.getElementById("skuStatus").value === "true";
+
+  if (!sku) return;
+
+  skuDatabase[sku] = status;
+  document.getElementById("manageResult").innerHTML = `✅ SKU ${sku} saved as ${status ? 'APPLICABLE' : 'NOT APPLICABLE'}`;
+}
+
+/* ---------- INIT ---------- */
+showHomepage();
+</script>
+
+</body>
+</html>
